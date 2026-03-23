@@ -74,11 +74,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const startDate = startDateParam ? new Date(startDateParam) : undefined;
-  if (startDateParam && Number.isNaN(startDate.getTime())) {
+  if (startDateParam && Number.isNaN(startDate?.getTime())) {
     return res.status(400).json({ error: "Invalid startDate" });
   }
   const endDate = endDateParam ? new Date(endDateParam) : undefined;
-  if (endDateParam && Number.isNaN(endDate.getTime())) {
+  if (endDateParam && Number.isNaN(endDate?.getTime())) {
     return res.status(400).json({ error: "Invalid endDate" });
   }
   if (startDate || endDate) {
