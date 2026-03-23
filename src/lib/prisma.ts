@@ -3,12 +3,24 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 // Prevent creating a new PrismaClient on every hot-reload in development.
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+let prismaInstance = globalForPrisma.prisma;
 
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) throw new Error("Missing DATABASE_URL in environment");
+export function getPrisma(): PrismaClient {
+  if (prismaInstance) return prismaInstance;
 
-export const prisma =
-  globalForPrisma.prisma ?? new PrismaClient({ adapter: new PrismaPg({ connectionString: databaseUrl }) });
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error("Missing DATABASE_URL in environment");
+  }
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+  prismaInstance = new PrismaClient({
+    adapter: new PrismaPg({ connectionString: databaseUrl }),
+  });
+
+  if (process.env.NODE_ENV !== "production") {
+    globalForPrisma.prisma = prismaInstance;
+  }
+
+  return prismaInstance;
+}
 

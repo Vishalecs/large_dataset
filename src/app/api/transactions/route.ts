@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma, Region, TransactionStatus } from "@/generated/prisma/client";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +19,7 @@ const ALLOWED_REGIONS = new Set<Region>([
 
 export async function GET(req: NextRequest) {
   try {
+    const prisma = getPrisma();
     const { searchParams } = new URL(req.url);
 
     const page = Math.max(1, Number(searchParams.get("page") ?? "1"));

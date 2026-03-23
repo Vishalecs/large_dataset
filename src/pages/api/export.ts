@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { Prisma, Region, TransactionStatus } from "@/generated/prisma/client";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 export const config = {
   api: {
@@ -30,6 +30,7 @@ function csvEscape(value: unknown): string {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const prisma = getPrisma();
   if (req.method !== "GET") return res.status(405).end();
 
   const statusParam = typeof req.query.status === "string" ? req.query.status : undefined;
