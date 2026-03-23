@@ -3,6 +3,21 @@ import { Prisma, Region, TransactionStatus } from "@/generated/prisma/client";
 import { getPrisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+function withCorsHeaders(response: NextResponse) {
+  const allowedOrigin = process.env.CORS_ORIGIN?.trim();
+  if (allowedOrigin) {
+    response.headers.set("Access-Control-Allow-Origin", allowedOrigin);
+    response.headers.set("Access-Control-Allow-Methods", "GET,OPTIONS");
+    response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  }
+  return response;
+}
+
+export async function OPTIONS() {
+  return withCorsHeaders(new NextResponse(null, { status: 204 }));
+}
 
 const ALLOWED_STATUSES = new Set<TransactionStatus>([
   TransactionStatus.Success,
@@ -38,7 +53,7 @@ export async function GET(req: NextRequest) {
     if (statusParam) {
       const status = statusParam as TransactionStatus;
       if (!ALLOWED_STATUSES.has(status)) {
-        return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+        return withCorsHeaders(NextResponse.json({ error: "Invalid status" }, { status: 400 }));
       }
       where.status = status;
     }
@@ -46,23 +61,23 @@ export async function GET(req: NextRequest) {
     if (regionParam) {
       const region = regionParam as Region;
       if (!ALLOWED_REGIONS.has(region)) {
-        return NextResponse.json({ error: "Invalid region" }, { status: 400 });
+        return withCorsHeaders(NextResponse.json({ error: "Invalid region" }, { status: 400 }));
       }
       where.region = region;
     }
 
     const cursorFromLastId = lastIdParam ? Number(lastIdParam) : null;
     if (cursorFromLastId !== null && Number.isNaN(cursorFromLastId)) {
-      return NextResponse.json({ error: "Invalid lastId" }, { status: 400 });
+      return withCorsHeaders(NextResponse.json({ error: "Invalid lastId" }, { status: 400 }));
     }
 
     const minAmount = minAmountParam ? Number(minAmountParam) : undefined;
     if (minAmount !== undefined && Number.isNaN(minAmount)) {
-      return NextResponse.json({ error: "Invalid minAmount" }, { status: 400 });
+      return withCorsHeaders(NextResponse.json({ error: "Invalid minAmount" }, { status: 400 }));
     }
     const maxAmount = maxAmountParam ? Number(maxAmountParam) : undefined;
     if (maxAmount !== undefined && Number.isNaN(maxAmount)) {
-      return NextResponse.json({ error: "Invalid maxAmount" }, { status: 400 });
+      return withCorsHeaders(NextResponse.json({ error: "Invalid maxAmount" }, { status: 400 }));
     }
     if (minAmount !== undefined || maxAmount !== undefined) {
       where.amount = {
@@ -73,11 +88,11 @@ export async function GET(req: NextRequest) {
 
     const startDate = startDateParam ? new Date(startDateParam) : undefined;
     if (startDateParam && Number.isNaN(startDate?.getTime())) {
-      return NextResponse.json({ error: "Invalid startDate" }, { status: 400 });
+      return withCorsHeaders(NextResponse.json({ error: "Invalid startDate" }, { status: 400 }));
     }
     const endDate = endDateParam ? new Date(endDateParam) : undefined;
     if (endDateParam && Number.isNaN(endDate?.getTime())) {
-      return NextResponse.json({ error: "Invalid endDate" }, { status: 400 });
+      return withCorsHeaders(NextResponse.json({ error: "Invalid endDate" }, { status: 400 }));
     }
     if (startDate || endDate) {
       const nextDayExclusive = endDate
@@ -143,13 +158,14 @@ export async function GET(req: NextRequest) {
       nextLastId,
     });
 
-    return NextResponse.json({ items: safeItems, nextLastId });
+    return withCorsHeaders(NextResponse.json({ items: safeItems, nextLastId }));
   } catch (error) {
     console.error("[api/transactions] failed", error);
-    return NextResponse.json(
-      { error: "Unable to fetch transactions at the moment." },
-      { status: 500 },
-    );
+    const message =
+      error instanceof Error && /DATABASE_URL/i.test(error.message)
+        ? "Database is not configured in deployment environment."
+        : "Unable to fetch transactions at the moment.";
+    return withCorsHeaders(NextResponse.json({ error: message }, { status: 500 }));
   }
 }
 

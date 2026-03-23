@@ -14,7 +14,12 @@ type TransactionRow = {
 const PAGE_SIZE = 1000;
 
 function buildUrl(path: string, params: Record<string, string | number | undefined>) {
-  const url = new URL(path, window.location.origin);
+  const configuredBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+  const baseUrl =
+    configuredBaseUrl && /^https?:\/\//i.test(configuredBaseUrl)
+      ? configuredBaseUrl
+      : window.location.origin;
+  const url = new URL(path, baseUrl);
   for (const [k, v] of Object.entries(params)) {
     if (v === undefined || v === "") continue;
     url.searchParams.set(k, String(v));

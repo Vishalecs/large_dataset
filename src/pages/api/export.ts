@@ -9,6 +9,14 @@ export const config = {
   },
 };
 
+function applyCorsHeaders(res: NextApiResponse) {
+  const allowedOrigin = process.env.CORS_ORIGIN?.trim();
+  if (!allowedOrigin) return;
+  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+}
+
 const ALLOWED_STATUSES = new Set<TransactionStatus>([
   TransactionStatus.Success,
   TransactionStatus.Pending,
@@ -30,6 +38,8 @@ function csvEscape(value: unknown): string {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  applyCorsHeaders(res);
+  if (req.method === "OPTIONS") return res.status(204).end();
   const prisma = getPrisma();
   if (req.method !== "GET") return res.status(405).end();
 
